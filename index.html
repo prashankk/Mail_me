@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mail Reminder (Every 15 Minutes)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 18px;
+      padding: 24px 28px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+
+    .timer-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .timer {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      color: #a5b4fc;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      flex: 1;
+      border-radius: 999px;
+      border: none;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+      white-space: nowrap;
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.45);
+    }
+
+    .btn-primary:hover {
+      background: #4338ca;
+    }
+
+    .btn-secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.6);
+    }
+
+    .btn-secondary:hover {
+      background: #020617;
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">Mail Reminder</div>
+    <div class="subtitle">Reminds you to check mail every 15 minutes.</div>
+
+    <div class="timer-label">Next reminder in</div>
+    <div id="timer" class="timer">15:00</div>
+    <div id="status" class="status">Click “Start reminders” to begin.</div>
+
+    <div class="buttons">
+      <button id="startBtn" class="btn-primary">Start reminders</button>
+      <button id="stopBtn" class="btn-secondary">Stop</button>
+      <button id="resetBtn" class="btn-secondary">I checked my mail</button>
+    </div>
+
+    <div class="hint">
+      • Keep this tab open for reminders to work.<br />
+      • Allow browser notifications when prompted for better alerts.
+    </div>
+  </div>
+
+  <script>
+    const FULL_INTERVAL = 15 * 60; // 15 minutes in seconds
+    let remainingSeconds = FULL_INTERVAL;
+    let timerId = null;
+
+    const timerEl = document.getElementById("timer");
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      const mm = m.toString().padStart(2, "0");
+      const ss = s.toString().padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function updateDisplay() {
+      timerEl.textContent = formatTime(remainingSeconds);
+    }
+
+    function triggerReminder() {
+      // Alert popup
+      alert("Time to check your mail!");
+
+      // Try browser notification
+      if ("Notification" in window) {
+        if (Notification.permission === "granted") {
+          new Notification("Mail Reminder", {
+            body: "Time to check your mail.",
+          });
+        } else if (Notification.permission !== "denied") {
+          Notification.requestPermission().then((perm) => {
+            if (perm === "granted") {
+              new Notification("Mail Reminder", {
+                body: "Time to check your mail.",
+              });
+            }
+          });
+        }
+      }
+    }
+
+    function tick() {
+      if (remainingSeconds > 0) {
+        remainingSeconds -= 1;
+      } else {
+        triggerReminder();
+        remainingSeconds = FULL_INTERVAL; // reset for next 15 mins
+      }
+      updateDisplay();
+    }
+
+    function startTimer() {
+      if (timerId !== null) return; // already running
+      timerId = setInterval(tick, 1000);
+      statusEl.textContent = "Reminders running every 15 minutes.";
+    }
+
+    function stopTimer() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+        statusEl.textContent = "Reminders paused.";
+      }
+    }
+
+    function resetTimer() {
+      remainingSeconds = FULL_INTERVAL;
+      updateDisplay();
+      statusEl.textContent = "Timer reset after you checked mail.";
+    }
+
+    startBtn.addEventListener("click", startTimer);
+    stopBtn.addEventListener("click", stopTimer);
+    resetBtn.addEventListener("click", resetTimer);
+
+    // initial display
+    updateDisplay();
+  </script>
+</body>
+</html>
